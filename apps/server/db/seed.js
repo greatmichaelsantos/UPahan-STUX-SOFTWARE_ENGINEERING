@@ -29,26 +29,26 @@ async function seed() {
 
     // Admin user
     const adminResult = await client.query(
-      `INSERT INTO users (first_name, last_name, email, phone_number, password, role)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id`,
+      `INSERT INTO users (first_name, last_name, email, phone_number, password, role, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING user_id`,
       ['John', 'Doe', 'admin@upahan.com', '+639171234567', adminPass, 'admin']
     );
     const adminId = adminResult.rows[0].user_id;
 
     // Tenant users
     const tenant1 = await client.query(
-      `INSERT INTO users (first_name, last_name, email, phone_number, password, role)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id`,
+      `INSERT INTO users (first_name, last_name, email, phone_number, password, role, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING user_id`,
       ['Maria', 'Santos', 'maria@tenant.com', '+639181234567', tenantPass, 'tenant']
     );
     const tenant2 = await client.query(
-      `INSERT INTO users (first_name, last_name, email, phone_number, password, role)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id`,
+      `INSERT INTO users (first_name, last_name, email, phone_number, password, role, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING user_id`,
       ['Jose', 'Reyes', 'jose@tenant.com', '+639191234567', tenantPass, 'tenant']
     );
     const tenant3 = await client.query(
-      `INSERT INTO users (first_name, last_name, email, phone_number, password, role)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id`,
+      `INSERT INTO users (first_name, last_name, email, phone_number, password, role, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING user_id`,
       ['Ana', 'Cruz', 'ana@tenant.com', '+639201234567', tenantPass, 'tenant']
     );
 
