@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+﻿import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   Alert, RefreshControl, ActivityIndicator, StatusBar, Modal, FlatList,
@@ -14,6 +14,12 @@ import { COLORS } from '../../constants/colors';
 
 const TEAL = COLORS.landlordPrimary;
 const GOLD = COLORS.goldAccent;
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
 export default function AdminUnitDetail({ route, navigation }) {
   const { unitId } = route.params;
@@ -89,7 +95,7 @@ export default function AdminUnitDetail({ route, navigation }) {
     try {
       await api.post(API_ROUTES.TENANTS, { userId: selectedUser.user_id, unitId });
       setAssignModal(false);
-      fetchAll();
+      await fetchAll();
     } catch (e) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to assign tenant.');
     }
@@ -141,7 +147,12 @@ export default function AdminUnitDetail({ route, navigation }) {
   }
   if (!unit) return null;
 
-  const tenant  = unit.current_tenant;
+  const tenant = unit.tenant_user_id ? {
+    first_name:   unit.first_name,
+    last_name:    unit.last_name,
+    email:        unit.tenant_email,
+    phone_number: unit.tenant_phone,
+  } : null;
   const idDoc   = documents.find(d => d.document_type === 'valid_id');
   const contract = documents.find(d => d.document_type === 'contract');
 
@@ -195,6 +206,7 @@ export default function AdminUnitDetail({ route, navigation }) {
           {unit.floor_plan  && <Row label="Floor Plan"  value={unit.floor_plan} />}
           {unit.location    && <Row label="Location"    value={unit.location} />}
           {unit.bedrooms    && <Row label="Bedrooms"    value={unit.bedrooms} />}
+          <Row label="Due Day" value={`${ordinal(unit.due_day || 5)} of every month`} />
           {unit.description && <Row label="Description" value={unit.description} />}
         </View>
 
@@ -455,7 +467,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 32, backgroundColor: TEAL,
   },
   headerLabel: { fontSize: 11, fontWeight: '700', color: GOLD, letterSpacing: 1.5, marginBottom: 4 },
-  headerTitle: { fontSize: 22, fontWeight: '700', fontFamily: 'serif', color: '#fff' },
+  headerTitle: { fontSize: 22, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#fff' },
   scroll:    { paddingBottom: 40 },
 
   priceCard: {
@@ -465,7 +477,7 @@ const s = StyleSheet.create({
   },
   priceRow:   { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   priceLabel: { fontSize: 11, fontWeight: '700', color: GOLD, letterSpacing: 1.5, marginBottom: 4 },
-  price:      { fontSize: 32, fontWeight: '700', fontFamily: 'serif', color: COLORS.textPrimary },
+  price:      { fontSize: 32, fontWeight: '700', fontFamily: 'Inter_700Bold', color: COLORS.textPrimary },
   editUnitLink: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     borderWidth: 1.5, borderColor: TEAL, borderRadius: 999,

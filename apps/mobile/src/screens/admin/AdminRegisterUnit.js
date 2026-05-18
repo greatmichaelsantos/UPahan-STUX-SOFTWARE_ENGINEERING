@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, Image, StatusBar
@@ -15,7 +15,7 @@ const GOLD = COLORS.goldAccent;
 
 export default function AdminRegisterUnit({ navigation }) {
   const [form, setForm] = useState({
-    unitCode: '', monthlyPrice: '', floorPlan: '', location: '', bedrooms: '', description: '',
+    unitCode: '', monthlyPrice: '', floorPlan: '', location: '', bedrooms: '', description: '', dueDay: '5',
   });
   const [photos, setPhotos]   = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,10 @@ export default function AdminRegisterUnit({ navigation }) {
     if (isNaN(parseFloat(form.monthlyPrice))) {
       return Alert.alert('Invalid', 'Monthly price must be a number.');
     }
+    const parsedDueDay = parseInt(form.dueDay);
+    if (isNaN(parsedDueDay) || parsedDueDay < 1 || parsedDueDay > 31) {
+      return Alert.alert('Invalid', 'Due day must be between 1 and 31.');
+    }
     setLoading(true);
     try {
       const res = await api.post(API_ROUTES.UNITS, {
@@ -47,6 +51,7 @@ export default function AdminRegisterUnit({ navigation }) {
         location:     form.location.trim()    || null,
         bedrooms:     form.bedrooms.trim()    || null,
         description:  form.description.trim() || null,
+        dueDay:       parsedDueDay,
       });
       const newUnitId = res.data.data?.unit_id;
       if (newUnitId && photos.length > 0) {
@@ -72,7 +77,6 @@ export default function AdminRegisterUnit({ navigation }) {
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerLabel}>INVENTORY</Text>
           <Text style={s.headerTitle}>Register Unit</Text>
         </View>
       </View>
@@ -87,6 +91,7 @@ export default function AdminRegisterUnit({ navigation }) {
         <Field label="Floor Plan"      value={form.floorPlan}    onChange={set('floorPlan')}    placeholder="e.g. Studio, 2 Bedroom" />
         <Field label="Location"        value={form.location}     onChange={set('location')}     placeholder="e.g. Olongapo City" />
         <Field label="Bedrooms"        value={form.bedrooms}     onChange={set('bedrooms')}     placeholder="e.g. 1 Bedroom" keyboard="number-pad" />
+        <Field label="Payment Due Day" value={form.dueDay}       onChange={set('dueDay')}       placeholder="e.g. 5" keyboard="number-pad" />
         <Field label="Description"     value={form.description}  onChange={set('description')}  placeholder="Additional details…" multiline />
 
         <Text style={s.fieldLabel}>PHOTOS</Text>
@@ -154,7 +159,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, backgroundColor: TEAL,
   },
   headerLabel: { fontSize: 11, fontWeight: '700', color: GOLD, letterSpacing: 1.5, marginBottom: 4 },
-  headerTitle: { fontSize: 22, fontWeight: '700', fontFamily: 'serif', color: '#fff' },
+  headerTitle: { fontSize: 22, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#fff' },
   scroll:     { padding: 20, paddingBottom: 56 },
   field:      { marginBottom: 16 },
   fieldLabel: {

@@ -19,7 +19,7 @@ const inputStyle = {
 
 export default function AdminRegisterUnit() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ unitCode: '', monthlyPrice: '', vacancyStatus: 'vacant', floorPlan: '', location: '', description: '', bedrooms: '' });
+  const [form, setForm] = useState({ unitCode: '', monthlyPrice: '', vacancyStatus: 'vacant', floorPlan: '', location: '', description: '', bedrooms: '', dueDay: 5 });
   const [photos, setPhotos]   = useState([]);
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,9 +39,11 @@ export default function AdminRegisterUnit() {
     setError('');
     if (!form.unitCode || !form.monthlyPrice) { setError('Unit code and monthly price are required.'); return; }
     if (!form.bedrooms) { setError('Please select a bedroom count.'); return; }
+    const parsedDueDay = parseInt(form.dueDay);
+    if (isNaN(parsedDueDay) || parsedDueDay < 1 || parsedDueDay > 31) { setError('Payment due day must be between 1 and 31.'); return; }
     setLoading(true);
     try {
-      const res = await api.post('/units', form);
+      const res = await api.post('/units', { ...form, dueDay: parsedDueDay });
       const unitId = res.data.data.unit_id;
       if (photos.length > 0) {
         const fd = new FormData();
@@ -169,6 +171,15 @@ export default function AdminRegisterUnit() {
               <MapPin size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#888888' }} aria-hidden="true" />
               <input value={form.location} onChange={set('location')} placeholder="e.g., Olongapo City, Zambales"
                 style={iStyle} onFocus={onFocus} onBlur={onBlur} />
+            </div>
+          </div>
+
+          {/* Due Day */}
+          <div>
+            <Label>Payment Due Day (1–31)</Label>
+            <div style={{ position: 'relative' }}>
+              <input type="number" min="1" max="31" value={form.dueDay} onChange={set('dueDay')} placeholder="5"
+                style={{ ...iStyle, paddingLeft: 14 }} onFocus={onFocus} onBlur={onBlur} />
             </div>
           </div>
 

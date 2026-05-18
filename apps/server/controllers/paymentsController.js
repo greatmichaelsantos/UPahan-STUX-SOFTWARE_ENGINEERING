@@ -185,7 +185,8 @@ const declarePayment = async (req, res) => {
     }
 
     const tenantResult = await pool.query(
-      `SELECT t.tenant_id, t.unit_id, u.monthly_price, u2.first_name || ' ' || u2.last_name AS tenant_name, u.unit_code
+      `SELECT t.tenant_id, t.unit_id, u.monthly_price, u.due_day,
+              u2.first_name || ' ' || u2.last_name AS tenant_name, u.unit_code
        FROM tenants t
        JOIN units u ON t.unit_id = u.unit_id
        JOIN users u2 ON t.user_id = u2.user_id
@@ -195,7 +196,9 @@ const declarePayment = async (req, res) => {
     if (tenantResult.rows.length === 0) {
       return res.status(400).json({ success: false, message: 'No active tenancy found.' });
     }
-    const { tenant_id, unit_id, monthly_price, tenant_name, unit_code } = tenantResult.rows[0];
+    const { tenant_id, unit_id, monthly_price, due_day, tenant_name, unit_code } = tenantResult.rows[0];
+    const dueDay = parseInt(due_day) || 5;
+    const isLate = new Date().getDate() > dueDay;
     const monthCovered = bodyMonthCovered || paymentDate.substring(0, 7);
 
     if (parseFloat(amountPaid) <= 0) {
@@ -233,10 +236,10 @@ const declarePayment = async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO payments (tenant_id, unit_id, amount, payment_date, payment_status, month_covered,
-         payment_method, reference_number, proof_images, notes, declared_by_tenant, verified_by_admin, payment_type)
-       VALUES ($1, $2, $3, $4, 'pending_approval', $5, $6, $7, $8, $9, true, false, $10) RETURNING *`,
+         payment_method, reference_number, proof_images, notes, declared_by_tenant, verified_by_admin, payment_type, is_late)
+       VALUES ($1, $2, $3, $4, 'pending_approval', $5, $6, $7, $8, $9, true, false, $10, $11) RETURNING *`,
       [tenant_id, unit_id, parseFloat(amountPaid), paymentDate, monthCovered,
-       paymentMethod, referenceNumber || null, proofImages, notes || null, pType]
+       paymentMethod, referenceNumber || null, proofImages, notes || null, pType, isLate]
     );
 
     // Notify admin (non-blocking)

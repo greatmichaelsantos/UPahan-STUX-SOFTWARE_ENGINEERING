@@ -129,6 +129,14 @@ async function migrate() {
     await pool.query(`ALTER TABLE maintenance_requests ADD COLUMN IF NOT EXISTS maintenance_images TEXT`);
     console.log('✓ maintenance_requests.maintenance_images');
 
+    // Payment due day per unit
+    await pool.query(`ALTER TABLE units ADD COLUMN IF NOT EXISTS due_day INTEGER DEFAULT 5`);
+    console.log('✓ units.due_day');
+
+    // Late payment flag
+    await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_late BOOLEAN DEFAULT FALSE`);
+    console.log('✓ payments.is_late');
+
     console.log('\nMigration completed successfully!');
     process.exit(0);
   } catch (err) {

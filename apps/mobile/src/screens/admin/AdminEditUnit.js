@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, Image, StatusBar
@@ -23,6 +23,7 @@ export default function AdminEditUnit({ route, navigation }) {
     location:     unit?.location            || '',
     bedrooms:     String(unit?.bedrooms      || ''),
     description:  unit?.description         || '',
+    dueDay:       String(unit?.due_day       || '5'),
   });
   const [photos, setPhotos]   = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,10 @@ export default function AdminEditUnit({ route, navigation }) {
     if (isNaN(parseFloat(form.monthlyPrice))) {
       return Alert.alert('Invalid', 'Monthly price must be a number.');
     }
+    const parsedDueDay = parseInt(form.dueDay);
+    if (isNaN(parsedDueDay) || parsedDueDay < 1 || parsedDueDay > 31) {
+      return Alert.alert('Invalid', 'Due day must be between 1 and 31.');
+    }
     setLoading(true);
     try {
       await api.put(API_ROUTES.unitById(unit.unit_id), {
@@ -54,6 +59,7 @@ export default function AdminEditUnit({ route, navigation }) {
         location:     form.location.trim()    || null,
         bedrooms:     form.bedrooms.trim()    || null,
         description:  form.description.trim() || null,
+        dueDay:       parsedDueDay,
       });
       if (photos.length > 0) {
         const fd = new FormData();
@@ -101,7 +107,6 @@ export default function AdminEditUnit({ route, navigation }) {
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerLabel}>INVENTORY</Text>
           <Text style={s.headerTitle}>Edit Unit</Text>
         </View>
       </View>
@@ -111,12 +116,13 @@ export default function AdminEditUnit({ route, navigation }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Field label="Unit Code *"     value={form.unitCode}     onChange={set('unitCode')}     placeholder="e.g. A-101" caps />
-        <Field label="Monthly Price *" value={form.monthlyPrice} onChange={set('monthlyPrice')} placeholder="e.g. 5000"  keyboard="decimal-pad" />
-        <Field label="Floor Plan"      value={form.floorPlan}    onChange={set('floorPlan')}    placeholder="e.g. Studio, 2 Bedroom" />
-        <Field label="Location"        value={form.location}     onChange={set('location')}     placeholder="e.g. Olongapo City" />
-        <Field label="Bedrooms"        value={form.bedrooms}     onChange={set('bedrooms')}     placeholder="e.g. 1 Bedroom" keyboard="number-pad" />
-        <Field label="Description"     value={form.description}  onChange={set('description')}  placeholder="Additional details…" multiline />
+        <Field label="Unit Code *"       value={form.unitCode}     onChange={set('unitCode')}     placeholder="e.g. A-101" caps />
+        <Field label="Monthly Price *"   value={form.monthlyPrice} onChange={set('monthlyPrice')} placeholder="e.g. 5000"  keyboard="decimal-pad" />
+        <Field label="Floor Plan"        value={form.floorPlan}    onChange={set('floorPlan')}    placeholder="e.g. Studio, 2 Bedroom" />
+        <Field label="Location"          value={form.location}     onChange={set('location')}     placeholder="e.g. Olongapo City" />
+        <Field label="Bedrooms"          value={form.bedrooms}     onChange={set('bedrooms')}     placeholder="e.g. 1 Bedroom" keyboard="number-pad" />
+        <Field label="Payment Due Day"   value={form.dueDay}       onChange={set('dueDay')}       placeholder="e.g. 5" keyboard="number-pad" />
+        <Field label="Description"       value={form.description}  onChange={set('description')}  placeholder="Additional details…" multiline />
 
         <Text style={s.fieldLabel}>ADD PHOTOS</Text>
         <TouchableOpacity style={s.uploadZone} onPress={pickPhoto}>
@@ -192,7 +198,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24, backgroundColor: TEAL,
   },
   headerLabel: { fontSize: 11, fontWeight: '700', color: GOLD, letterSpacing: 1.5, marginBottom: 4 },
-  headerTitle: { fontSize: 22, fontWeight: '700', fontFamily: 'serif', color: '#fff' },
+  headerTitle: { fontSize: 22, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#fff' },
   scroll:     { padding: 20, paddingBottom: 56 },
   field:      { marginBottom: 16 },
   fieldLabel: {

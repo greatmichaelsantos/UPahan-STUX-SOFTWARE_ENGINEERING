@@ -11,34 +11,49 @@ const CATEGORIES = [
   { value: 'others',     label: 'Others',     sub: 'Iba pa',        emoji: '🔧' },
 ];
 
+const PRIORITIES = [
+  { value: 'low',    label: 'Low',    color: '#888888' },
+  { value: 'medium', label: 'Medium', color: '#E07B39' },
+  { value: 'high',   label: 'High',   color: '#D64045' },
+];
+
 const Label = ({ children }) => (
   <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
     {children}
   </p>
 );
 
+const FieldError = ({ msg }) => msg ? (
+  <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#D64045', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+    <AlertCircle size={13} /> {msg}
+  </p>
+) : null;
+
 export default function TenantMaintenanceRequest() {
   const navigate = useNavigate();
-  const [category, setCategory]   = useState('');
-  const [subject, setSubject]     = useState('');
+  const [category, setCategory]       = useState('');
+  const [subject, setSubject]         = useState('');
   const [description, setDescription] = useState('');
-  const [photos, setPhotos]       = useState([]);
-  const [previews, setPreviews]   = useState([]);
-  const [photoError, setPhotoError] = useState('');
-  const [dropOpen, setDropOpen]   = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [success, setSuccess]     = useState(false);
-  const [error, setError]         = useState('');
+  const [priority, setPriority]       = useState('');
+  const [photos, setPhotos]           = useState([]);
+  const [previews, setPreviews]       = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [dropOpen, setDropOpen]       = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [success, setSuccess]         = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const fileInputRef = useRef(null);
 
   const MAX_PHOTOS = 5;
   const MIN_PHOTOS = 3;
 
+  const clearError = (key) => setFieldErrors(prev => ({ ...prev, [key]: undefined }));
+
   const handlePhoto = (e) => {
     const incoming = Array.from(e.target.files || []);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (!incoming.length) return;
-    setPhotoError('');
+    clearError('photos');
     setPhotos(prev => {
       const combined = [...prev, ...incoming].slice(0, MAX_PHOTOS);
       setPreviews(combined.map(f => URL.createObjectURL(f)));
@@ -56,28 +71,28 @@ export default function TenantMaintenanceRequest() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    if (!category) { setError('Please select an issue category.'); return; }
-    if (!subject.trim()) { setError('Please provide a subject.'); return; }
-    if (photos.length < MIN_PHOTOS) {
-      const msg = photos.length === 0
-        ? 'Please attach at least 3 photos to describe the issue.'
-        : `Please attach at least 3 photos. You have ${photos.length} so far.`;
-      setPhotoError(msg);
-      return;
-    }
+    setSubmitError('');
+    const errors = {};
+    if (!category)          errors.category    = 'Please select an issue category.';
+    if (!subject.trim())    errors.subject     = 'Please enter a subject.';
+    if (!description.trim()) errors.description = 'Please describe the issue.';
+    if (!priority)          errors.priority    = 'Please select a priority level.';
+    if (photos.length < MIN_PHOTOS) errors.photos = 'Please attach at least 3 photos.';
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     setLoading(true);
     try {
       const fd = new FormData();
       fd.append('issueCategory', category);
       fd.append('subject', subject.trim());
-      fd.append('description', description);
+      fd.append('description', description.trim());
+      fd.append('priorityLevel', priority);
       photos.forEach(f => fd.append('maintenance_images', f));
       await api.post('/maintenance', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setSuccess(true);
       setTimeout(() => navigate('/tenant/maintenance'), 1800);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit request.');
+      setSubmitError(err.response?.data?.message || 'Failed to submit request.');
     } finally {
       setLoading(false);
     }
@@ -100,7 +115,7 @@ export default function TenantMaintenanceRequest() {
   const inputStyle = {
     width: '100%', height: 52, borderRadius: 8, background: '#F0EEEB',
     border: '1.5px solid transparent', fontFamily: 'Inter', fontSize: 14, color: '#4A4A4A',
-    paddingLeft: 14, paddingRight: 14, outline: 'none', transition: 'all 150ms ease',
+    paddingLeft: 14, paddingRight: 14, outline: 'none', transition: 'all 150ms ease', boxSizing: 'border-box',
   };
   const onFocus = (e) => { e.target.style.borderColor = '#3A7BD5'; e.target.style.background = '#EBF2FC'; };
   const onBlur  = (e) => { e.target.style.borderColor = 'transparent'; e.target.style.background = '#F0EEEB'; };
@@ -108,7 +123,6 @@ export default function TenantMaintenanceRequest() {
   return (
     <TenantLayout title="New Request">
     <div style={{ minHeight: '100vh', background: '#FAF8F5' }}>
-      {/* Header — mobile only */}
       <div className="md:hidden" style={{ background: 'white', padding: '16px 20px 16px', borderBottom: '1px solid #F0EEEB' }}>
         <button
           onClick={() => navigate('/tenant/maintenance')}
@@ -121,23 +135,24 @@ export default function TenantMaintenanceRequest() {
       </div>
 
       <form onSubmit={handleSubmit} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {error && (
+        {submitError && (
           <div style={{ background: '#FDEEEE', border: '1px solid #D64045', borderRadius: 8, padding: '10px 14px', color: '#D64045', fontSize: 13, fontFamily: 'Inter', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={15} /> {error}
+            <AlertCircle size={15} /> {submitError}
           </div>
         )}
 
-        {/* Category dropdown */}
+        {/* Category */}
         <div className="card">
-          <Label>Issue Category</Label>
+          <Label>Issue Category *</Label>
           <div style={{ position: 'relative' }}>
             <button
               type="button"
               onClick={() => setDropOpen(!dropOpen)}
               style={{
                 width: '100%', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0 14px', borderRadius: 8, background: '#F0EEEB',
-                border: `1.5px solid ${dropOpen ? '#3A7BD5' : 'transparent'}`,
+                padding: '0 14px', borderRadius: 8,
+                background: fieldErrors.category ? '#FDEEEE' : '#F0EEEB',
+                border: `1.5px solid ${fieldErrors.category ? '#D64045' : dropOpen ? '#3A7BD5' : 'transparent'}`,
                 cursor: 'pointer', fontFamily: 'Inter', fontSize: 14, transition: 'all 150ms',
               }}
               aria-expanded={dropOpen} aria-haspopup="listbox"
@@ -153,7 +168,7 @@ export default function TenantMaintenanceRequest() {
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.value} type="button" role="option" aria-selected={category === cat.value}
-                    onClick={() => { setCategory(cat.value); setDropOpen(false); }}
+                    onClick={() => { setCategory(cat.value); setDropOpen(false); clearError('category'); }}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: 12,
                       padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
@@ -173,34 +188,74 @@ export default function TenantMaintenanceRequest() {
               </div>
             )}
           </div>
+          <FieldError msg={fieldErrors.category} />
         </div>
 
-        {/* Subject + description */}
-        {category && (
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <Label>Subject</Label>
-              <div style={{ position: 'relative' }}>
-                <AlertCircle size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#888888' }} aria-hidden="true" />
-                <input
-                  type="text" value={subject} onChange={e => setSubject(e.target.value)}
-                  placeholder="Ex. Sira ang Gripo" maxLength={150}
-                  style={{ ...inputStyle, paddingLeft: 42 }} onFocus={onFocus} onBlur={onBlur}
-                />
-              </div>
-            </div>
-            <div>
-              <Label>Description (Optional)</Label>
-              <textarea
-                value={description} onChange={e => setDescription(e.target.value)}
-                placeholder="Describe the issue in detail..."
-                rows={3}
-                style={{ ...inputStyle, height: 'auto', paddingTop: 12, paddingBottom: 12, resize: 'none' }}
+        {/* Subject + Description */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <Label>Subject *</Label>
+            <div style={{ position: 'relative' }}>
+              <AlertCircle size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#888888' }} aria-hidden="true" />
+              <input
+                type="text" value={subject}
+                onChange={e => { setSubject(e.target.value); clearError('subject'); }}
+                placeholder="Ex. Sira ang Gripo" maxLength={150}
+                style={{
+                  ...inputStyle, paddingLeft: 42,
+                  border: fieldErrors.subject ? '1.5px solid #D64045' : '1.5px solid transparent',
+                  background: fieldErrors.subject ? '#FDEEEE' : '#F0EEEB',
+                }}
                 onFocus={onFocus} onBlur={onBlur}
               />
             </div>
+            <FieldError msg={fieldErrors.subject} />
           </div>
-        )}
+
+          <div>
+            <Label>Description *</Label>
+            <textarea
+              value={description}
+              onChange={e => { setDescription(e.target.value); clearError('description'); }}
+              placeholder="Describe the issue in detail..."
+              rows={3}
+              style={{
+                ...inputStyle, height: 'auto', paddingTop: 12, paddingBottom: 12, resize: 'none',
+                border: fieldErrors.description ? '1.5px solid #D64045' : '1.5px solid transparent',
+                background: fieldErrors.description ? '#FDEEEE' : '#F0EEEB',
+              }}
+              onFocus={onFocus} onBlur={onBlur}
+            />
+            <FieldError msg={fieldErrors.description} />
+          </div>
+
+          <div>
+            <Label>Priority *</Label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {PRIORITIES.map(p => {
+                const active = priority === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => { setPriority(p.value); clearError('priority'); }}
+                    style={{
+                      flex: 1, height: 44, borderRadius: 8, cursor: 'pointer',
+                      border: `1.5px solid ${active ? p.color : '#E0DDD8'}`,
+                      background: active ? p.color : '#FAF8F5',
+                      color: active ? '#fff' : '#4A4A4A',
+                      fontFamily: 'Inter', fontWeight: 600, fontSize: 13,
+                      transition: 'all 150ms',
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+            <FieldError msg={fieldErrors.priority} />
+          </div>
+        </div>
 
         {/* Photo upload */}
         <div className="card">
@@ -234,14 +289,14 @@ export default function TenantMaintenanceRequest() {
           {photos.length < MAX_PHOTOS && (
             <label style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
-              border: `2px dashed ${photoError ? '#D64045' : '#3A7BD5'}`,
+              border: `2px dashed ${fieldErrors.photos ? '#D64045' : '#3A7BD5'}`,
               borderRadius: 10, padding: '20px 16px',
-              background: photoError ? '#FDEEEE' : '#EBF2FC',
+              background: fieldErrors.photos ? '#FDEEEE' : '#EBF2FC',
               cursor: 'pointer',
             }}>
-              <Camera size={28} color={photoError ? '#D64045' : '#3A7BD5'} aria-hidden="true" />
+              <Camera size={28} color={fieldErrors.photos ? '#D64045' : '#3A7BD5'} aria-hidden="true" />
               <div style={{ textAlign: 'center' }}>
-                <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: photoError ? '#D64045' : '#4A4A4A', marginBottom: 2 }}>
+                <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 13, color: fieldErrors.photos ? '#D64045' : '#4A4A4A', marginBottom: 2 }}>
                   {photos.length === 0 ? 'Click to add photos' : 'Add more photos'}
                 </p>
                 <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#888888' }}>Minimum 3 required · JPG, PNG up to 5MB</p>
@@ -250,14 +305,9 @@ export default function TenantMaintenanceRequest() {
             </label>
           )}
 
-          {photoError && (
-            <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#D64045', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <AlertCircle size={13} /> {photoError}
-            </p>
-          )}
+          <FieldError msg={fieldErrors.photos} />
         </div>
 
-        {/* Submit */}
         <button
           type="submit" disabled={loading}
           style={{

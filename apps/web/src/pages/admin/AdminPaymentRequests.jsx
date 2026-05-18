@@ -29,6 +29,7 @@ export default function AdminPaymentRequests() {
   const [approveTarget, setApproveTarget] = useState(null);  // { payment, confirm }
   const [rejectTarget, setRejectTarget]   = useState(null);  // { payment }
   const [rejectReason, setRejectReason]   = useState('');
+  const [customReason, setCustomReason]   = useState('');
   const [rejectError, setRejectError]     = useState('');
   const [processing, setProcessing]       = useState(false);
   const [toast, setToast]                 = useState('');
@@ -68,14 +69,29 @@ export default function AdminPaymentRequests() {
     }
   };
 
+  const REJECTION_REASONS = [
+    'Proof of payment is unclear or unreadable',
+    'Wrong payment amount',
+    'Duplicate submission',
+    'Invalid or missing reference number',
+    'Payment not reflected in records',
+    'Wrong month covered',
+    'Other',
+  ];
+
   const handleReject = async () => {
     if (!rejectTarget) return;
-    if (!rejectReason.trim()) { setRejectError('Please provide a rejection reason.'); return; }
+    const finalReason = rejectReason === 'Other' ? customReason.trim() : rejectReason;
+    if (!finalReason) {
+      setRejectError(rejectReason === 'Other' ? 'Please describe the reason.' : 'Please select a rejection reason.');
+      return;
+    }
     setProcessing(true);
     try {
-      await api.put(`/payments/${rejectTarget.payment_id}/reject`, { rejectionReason: rejectReason });
+      await api.put(`/payments/${rejectTarget.payment_id}/reject`, { rejectionReason: finalReason });
       setRejectTarget(null);
       setRejectReason('');
+      setCustomReason('');
       setRejectError('');
       load();
       showToast('Payment declaration rejected.');
@@ -204,7 +220,7 @@ export default function AdminPaymentRequests() {
                     <CheckCircle size={15} /> APPROVE
                   </button>
                   <button
-                    onClick={() => { setRejectTarget(d); setRejectReason(''); setRejectError(''); }}
+                    onClick={() => { setRejectTarget(d); setRejectReason(''); setCustomReason(''); setRejectError(''); }}
                     style={{
                       height: 44, borderRadius: 8, background: 'transparent', color: '#D64045',
                       border: '1.5px solid #D64045', fontFamily: 'Inter', fontWeight: 700, fontSize: 13,
@@ -267,22 +283,54 @@ export default function AdminPaymentRequests() {
           <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#888888', marginBottom: 14 }}>
             Provide a reason so <strong>{rejectTarget.tenant_name}</strong> is informed.
           </p>
-          {rejectError && (
-            <div style={{ background: '#FDEEEE', border: '1px solid #D64045', borderRadius: 8, padding: '8px 12px', color: '#D64045', fontSize: 13, fontFamily: 'Inter', marginBottom: 12 }}>
-              {rejectError}
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12, maxHeight: 280, overflowY: 'auto' }}>
+            {REJECTION_REASONS.map(reason => {
+              const active = rejectReason === reason;
+              return (
+                <button
+                  key={reason}
+                  type="button"
+                  onClick={() => { setRejectReason(reason); setCustomReason(''); if (rejectError) setRejectError(''); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 12px', borderRadius: 8,
+                    border: `1.5px solid ${active ? '#D64045' : '#E0DDD8'}`,
+                    background: active ? '#FFF5F5' : '#FAF8F5',
+                    cursor: 'pointer', textAlign: 'left', width: '100%',
+                    transition: 'all 150ms',
+                  }}
+                >
+                  <span style={{
+                    width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                    border: `2px solid ${active ? '#D64045' : '#C0B8B0'}`,
+                    background: active ? '#D64045' : 'white',
+                    display: 'inline-block',
+                  }} />
+                  <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#4A4A4A' }}>{reason}</span>
+                </button>
+              );
+            })}
+          </div>
+          {rejectReason === 'Other' && (
+            <textarea
+              value={customReason}
+              onChange={e => { setCustomReason(e.target.value); if (rejectError) setRejectError(''); }}
+              rows={3}
+              placeholder="Describe the reason..."
+              style={{
+                width: '100%', borderRadius: 8, background: '#F0EEEB', border: '1.5px solid transparent',
+                fontFamily: 'Inter', fontSize: 14, color: '#4A4A4A', padding: '10px 12px', outline: 'none',
+                resize: 'none', transition: 'all 150ms ease', marginBottom: 10, boxSizing: 'border-box',
+              }}
+              onFocus={e => { e.target.style.borderColor = '#D64045'; e.target.style.background = '#FDEEEE'; }}
+              onBlur={e => { e.target.style.borderColor = 'transparent'; e.target.style.background = '#F0EEEB'; }}
+            />
           )}
-          <textarea
-            value={rejectReason} onChange={e => { setRejectReason(e.target.value); if (rejectError) setRejectError(''); }}
-            rows={4} placeholder="Please provide a reason for rejection so the tenant is informed..."
-            style={{
-              width: '100%', borderRadius: 8, background: '#F0EEEB', border: '1.5px solid transparent',
-              fontFamily: 'Inter', fontSize: 14, color: '#4A4A4A', padding: '10px 12px', outline: 'none',
-              resize: 'none', transition: 'all 150ms ease', marginBottom: 14,
-            }}
-            onFocus={e => { e.target.style.borderColor = '#D64045'; e.target.style.background = '#FDEEEE'; }}
-            onBlur={e => { e.target.style.borderColor = 'transparent'; e.target.style.background = '#F0EEEB'; }}
-          />
+          {rejectError && (
+            <p style={{ color: '#D64045', fontSize: 12, fontFamily: 'Inter', marginBottom: 10, marginTop: -4 }}>
+              {rejectError}
+            </p>
+          )}
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               onClick={handleReject} disabled={processing}
@@ -295,7 +343,7 @@ export default function AdminPaymentRequests() {
               {processing ? 'Rejecting...' : 'CONFIRM REJECTION'}
             </button>
             <button
-              onClick={() => { setRejectTarget(null); setRejectReason(''); setRejectError(''); }} disabled={processing}
+              onClick={() => { setRejectTarget(null); setRejectReason(''); setCustomReason(''); setRejectError(''); }} disabled={processing}
               style={{
                 flex: 1, height: 48, borderRadius: 8, background: '#F0EEEB',
                 color: '#4A4A4A', border: 'none', fontFamily: 'Inter', fontWeight: 700, fontSize: 14, cursor: 'pointer',

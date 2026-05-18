@@ -9,6 +9,12 @@ import UploadContractModal from '../../components/UploadContractModal';
 import api from '../../utils/api';
 import { formatPeso, formatDate } from '../../utils/format';
 
+function ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 export default function AdminUnitDetail() {
   const { id } = useParams();
   const navigate  = useNavigate();
@@ -107,6 +113,7 @@ export default function AdminUnitDetail() {
             ['Location',    unit.location || '—'],
             ['Floor Plan',  unit.floor_plan || '—'],
             ['Bedrooms',    unit.bedrooms || '—'],
+            ['Due Day',     `${ordinal(unit.due_day || 5)} of every month`],
             ['Monthly Rent', formatPeso(unit.monthly_price)],
           ].map(([label, value]) => (
             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

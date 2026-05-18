@@ -42,6 +42,7 @@ export default function EditUnitModal({ unit, onClose, onSuccess }) {
     location:      unit?.location       || '',
     description:   unit?.description    || '',
     bedrooms:      unit?.bedrooms       || '',
+    dueDay:        unit?.due_day        || 5,
   });
   const [newPhotos, setNewPhotos]     = useState([]);
   const [previews, setPreviews]       = useState([]);
@@ -71,6 +72,8 @@ export default function EditUnitModal({ unit, onClose, onSuccess }) {
     setError('');
     if (!form.unitCode.trim()) { setError('Unit code is required.'); return; }
     if (!form.monthlyPrice)    { setError('Monthly price is required.'); return; }
+    const parsedDueDay = parseInt(form.dueDay);
+    if (isNaN(parsedDueDay) || parsedDueDay < 1 || parsedDueDay > 31) { setError('Must be between 1 and 31.'); return; }
 
     setSubmitting(true);
     try {
@@ -82,6 +85,7 @@ export default function EditUnitModal({ unit, onClose, onSuccess }) {
         location:      form.location   || null,
         description:   form.description || null,
         bedrooms:      form.bedrooms   || null,
+        dueDay:        parsedDueDay,
       });
 
       // Upload new photos if any
@@ -107,9 +111,6 @@ export default function EditUnitModal({ unit, onClose, onSuccess }) {
         {/* Header */}
         <div style={{ background: '#2E7D72', borderRadius: '16px 16px 0 0', padding: '20px 20px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 11, color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-              INVENTORY
-            </p>
             <h2 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 22, color: 'white' }}>
               Edit Unit {unit?.unit_code}
             </h2>
@@ -198,6 +199,13 @@ export default function EditUnitModal({ unit, onClose, onSuccess }) {
             <input value={form.location} onChange={set('location')}
               placeholder="e.g., Olongapo City, Zambales"
               style={baseInput} onFocus={onFocus} onBlur={onBlur} />
+          </div>
+
+          {/* Due Day */}
+          <div>
+            <label style={labelStyle}>Payment Due Day (1–31)</label>
+            <input type="number" min="1" max="31" value={form.dueDay} onChange={set('dueDay')}
+              placeholder="5" style={baseInput} onFocus={onFocus} onBlur={onBlur} />
           </div>
 
           {/* Description */}

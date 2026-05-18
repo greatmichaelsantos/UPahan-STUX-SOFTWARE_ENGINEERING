@@ -23,18 +23,16 @@ const MAX_PHOTOS = 5;
 const MIN_PHOTOS = 3;
 
 export default function TenantMaintenanceRequest({ navigation }) {
-  const [category, setCategory]     = useState('');
-  const [subject, setSubject]       = useState('');
-  const [description, setDesc]      = useState('');
-  const [priority, setPriority]     = useState('low');
-  const [photos, setPhotos]         = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [photoError, setPhotoError] = useState('');
+  const [category, setCategory]   = useState('');
+  const [subject, setSubject]     = useState('');
+  const [description, setDesc]    = useState('');
+  const [priority, setPriority]   = useState('');
+  const [photos, setPhotos]       = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const pickPhoto = async () => {
-    if (photos.length >= MAX_PHOTOS) {
-      return Alert.alert('Limit Reached', `You can only attach up to ${MAX_PHOTOS} photos.`);
-    }
+    if (photos.length >= MAX_PHOTOS) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       return Alert.alert('Permission Required', 'Please allow access to your photo library.');
@@ -46,22 +44,21 @@ export default function TenantMaintenanceRequest({ navigation }) {
     });
     if (!result.canceled) {
       setPhotos(prev => [...prev, ...result.assets].slice(0, MAX_PHOTOS));
-      setPhotoError('');
+      setFieldErrors(prev => ({ ...prev, photos: undefined }));
     }
   };
 
   const removePhoto = (index) => setPhotos(ps => ps.filter((_, j) => j !== index));
 
   const handleSubmit = async () => {
-    if (!category) return Alert.alert('Required', 'Please select an issue category.');
-    if (!subject.trim()) return Alert.alert('Required', 'Please enter a subject.');
-    if (photos.length < MIN_PHOTOS) {
-      const msg = photos.length === 0
-        ? 'Please attach at least 3 photos to describe the issue.'
-        : `Please attach at least 3 photos. You have ${photos.length} so far.`;
-      setPhotoError(msg);
-      return;
-    }
+    const errors = {};
+    if (!category) errors.category = 'Please select an issue category.';
+    if (!subject.trim()) errors.subject = 'Please enter a subject.';
+    if (!description.trim()) errors.description = 'Please describe the issue.';
+    if (!priority) errors.priority = 'Please select a priority level.';
+    if (photos.length < MIN_PHOTOS) errors.photos = 'Please attach at least 3 photos.';
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     setLoading(true);
     try {
       const fd = new FormData();
@@ -113,7 +110,7 @@ export default function TenantMaintenanceRequest({ navigation }) {
             <TouchableOpacity
               key={c.value}
               style={[s.chip, category === c.value && s.chipActive]}
-              onPress={() => setCategory(c.value)}
+              onPress={() => { setCategory(c.value); setFieldErrors(prev => ({ ...prev, category: undefined })); }}
             >
               <Text style={[s.chipText, category === c.value && s.chipTextActive]}>
                 {c.label}
@@ -121,8 +118,9 @@ export default function TenantMaintenanceRequest({ navigation }) {
             </TouchableOpacity>
           ))}
         </View>
+        {!!fieldErrors.category && <Text style={s.fieldError}>{fieldErrors.category}</Text>}
 
-        <Text style={s.fieldLabel}>PRIORITY</Text>
+        <Text style={s.fieldLabel}>PRIORITY *</Text>
         <View style={s.priorityRow}>
           {PRIORITIES.map(p => (
             <TouchableOpacity
@@ -131,7 +129,7 @@ export default function TenantMaintenanceRequest({ navigation }) {
                 s.priorityChip,
                 priority === p.value && { backgroundColor: p.color, borderColor: p.color },
               ]}
-              onPress={() => setPriority(p.value)}
+              onPress={() => { setPriority(p.value); setFieldErrors(prev => ({ ...prev, priority: undefined })); }}
             >
               <Text style={[s.priorityText, priority === p.value && { color: '#fff' }]}>
                 {p.label}
@@ -139,30 +137,33 @@ export default function TenantMaintenanceRequest({ navigation }) {
             </TouchableOpacity>
           ))}
         </View>
+        {!!fieldErrors.priority && <Text style={s.fieldError}>{fieldErrors.priority}</Text>}
 
         <Text style={s.fieldLabel}>SUBJECT *</Text>
-        <View style={s.inputWrap}>
+        <View style={[s.inputWrap, !!fieldErrors.subject && s.inputWrapError]}>
           <Ionicons name="alert-circle-outline" size={18} color={COLORS.textMuted} style={{ marginRight: 10 }} />
           <TextInput
             style={s.inputField}
             value={subject}
-            onChangeText={setSubject}
+            onChangeText={v => { setSubject(v); setFieldErrors(prev => ({ ...prev, subject: undefined })); }}
             placeholder="Brief description of the issue"
             placeholderTextColor={COLORS.textMuted}
           />
         </View>
+        {!!fieldErrors.subject && <Text style={s.fieldError}>{fieldErrors.subject}</Text>}
 
-        <Text style={s.fieldLabel}>DETAILS <Text style={s.optional}>(optional)</Text></Text>
+        <Text style={s.fieldLabel}>DETAILS *</Text>
         <TextInput
-          style={s.inputMulti}
+          style={[s.inputMulti, !!fieldErrors.description && s.inputMultiError]}
           value={description}
-          onChangeText={setDesc}
+          onChangeText={v => { setDesc(v); setFieldErrors(prev => ({ ...prev, description: undefined })); }}
           placeholder="Explain the issue in more detail…"
           placeholderTextColor={COLORS.textMuted}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
         />
+        {!!fieldErrors.description && <Text style={s.fieldError}>{fieldErrors.description}</Text>}
 
         <View style={s.photoHeaderRow}>
           <Text style={[s.fieldLabel, { marginTop: 0, marginBottom: 0 }]}>PHOTOS * (3–5 required)</Text>
@@ -188,19 +189,19 @@ export default function TenantMaintenanceRequest({ navigation }) {
 
         {photos.length < MAX_PHOTOS && (
           <TouchableOpacity
-            style={[s.uploadZone, photoError ? s.uploadZoneError : null]}
+            style={[s.uploadZone, fieldErrors.photos ? s.uploadZoneError : null]}
             onPress={pickPhoto}
           >
             <View style={s.uploadIconWrap}>
-              <Ionicons name="camera-outline" size={28} color={photoError ? COLORS.dangerPrimary : BLUE} />
+              <Ionicons name="camera-outline" size={28} color={fieldErrors.photos ? COLORS.dangerPrimary : BLUE} />
             </View>
-            <Text style={[s.uploadLabel, photoError ? { color: COLORS.dangerPrimary } : null]}>
+            <Text style={[s.uploadLabel, fieldErrors.photos ? { color: COLORS.dangerPrimary } : null]}>
               Tap to add photos
             </Text>
             <Text style={s.uploadSub}>Minimum 3 photos required</Text>
           </TouchableOpacity>
         )}
-        {!!photoError && <Text style={s.photoErrorText}>{photoError}</Text>}
+        {!!fieldErrors.photos && <Text style={s.fieldError}>{fieldErrors.photos}</Text>}
 
         <TouchableOpacity
           style={[s.submitBtn, loading && { opacity: 0.65 }]}
@@ -270,7 +271,9 @@ const s = StyleSheet.create({
   },
   uploadLabel:    { fontSize: 14, fontWeight: '700', color: BLUE },
   uploadSub:      { fontSize: 12, color: COLORS.textMuted },
-  photoErrorText: { fontSize: 12, color: COLORS.dangerPrimary, marginBottom: 12, marginTop: 2 },
+  fieldError:     { fontSize: 12, color: COLORS.dangerPrimary, marginTop: 4, marginBottom: 4 },
+  inputWrapError: { borderColor: COLORS.dangerPrimary },
+  inputMultiError:{ borderColor: COLORS.dangerPrimary },
   thumbImg:       { width: 76, height: 76, borderRadius: 10 },
   submitBtn: {
     backgroundColor: BLUE, height: 52, borderRadius: 999,
