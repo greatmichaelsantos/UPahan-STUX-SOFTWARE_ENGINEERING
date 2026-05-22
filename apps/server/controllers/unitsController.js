@@ -93,7 +93,10 @@ const createUnit = async (req, res) => {
   const parsedDueDay = parseInt(due_day || dueDay || 5);
   const validDueDay = (!isNaN(parsedDueDay) && parsedDueDay >= 1 && parsedDueDay <= 31) ? parsedDueDay : 5;
   try {
-    const existing = await pool.query('SELECT unit_id FROM units WHERE unit_code = $1', [unitCode.toUpperCase()]);
+    const existing = await pool.query(
+      'SELECT unit_id FROM units WHERE unit_code = $1 AND admin_id = $2',
+      [unitCode.toUpperCase(), req.user.userId]
+    );
     if (existing.rows.length > 0) {
       return res.status(409).json({ success: false, message: 'Unit code already exists.' });
     }

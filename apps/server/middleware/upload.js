@@ -87,7 +87,20 @@ const avatarUpload = multer({
   fileFilter: imageFilter,
 }).single('avatar');
 
+// Wraps a multer upload call so MulterError and fileFilter errors
+// return a 400 JSON response instead of falling through to the 500 handler.
+const wrapUpload = (uploadFn) => (req, res, next) => {
+  uploadFn(req, res, (err) => {
+    if (!err) return next();
+    const msg = err instanceof multer.MulterError
+      ? err.message
+      : (err.message || 'File upload failed.');
+    return res.status(400).json({ success: false, message: msg });
+  });
+};
+
 module.exports = {
   unitPhotoUpload, maintenancePhotoUpload, paymentProofUpload,
   documentIdUpload, contractUpload, avatarUpload,
+  wrapUpload,
 };

@@ -106,8 +106,10 @@ const createRequest = async (req, res) => {
       : `Please attach at least 3 photos. You have ${fileCount} so far.`;
     return res.status(400).json({ success: false, message: msg });
   }
-  const maintenanceImages = JSON.stringify(req.files.map(f => `/uploads/maintenance/${path.basename(f.path)}`));
   try {
+    const maintenanceImages = JSON.stringify(
+      (req.files || []).map(f => `/uploads/maintenance/${path.basename(f.path)}`)
+    );
     const tenantResult = await pool.query(
       `SELECT t.tenant_id, t.unit_id, u.first_name || ' ' || u.last_name AS tenant_name, un.unit_code
        FROM tenants t

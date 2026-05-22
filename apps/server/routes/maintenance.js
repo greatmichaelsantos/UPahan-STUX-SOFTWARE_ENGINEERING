@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { getRequests, getRequest, createRequest, updateRequest, uploadRequestPhotos } = require('../controllers/maintenanceController');
 const { verifyToken, requireRole } = require('../middleware/auth');
-const { maintenancePhotoUpload } = require('../middleware/upload');
+const { maintenancePhotoUpload, wrapUpload } = require('../middleware/upload');
 
 router.get('/', verifyToken, getRequests);
 router.get('/:id', verifyToken, getRequest);
-router.post('/', verifyToken, requireRole('tenant'), maintenancePhotoUpload.array('maintenance_images', 5), createRequest);
+router.post('/', verifyToken, requireRole('tenant'), wrapUpload(maintenancePhotoUpload.array('maintenance_images', 5)), createRequest);
 router.put('/:id', verifyToken, requireRole('admin'), updateRequest);
-router.post('/:id/photos', verifyToken, requireRole('tenant'), maintenancePhotoUpload.array('photos', 5), uploadRequestPhotos);
+router.post('/:id/photos', verifyToken, requireRole('tenant'), wrapUpload(maintenancePhotoUpload.array('photos', 5)), uploadRequestPhotos);
 
 module.exports = router;
