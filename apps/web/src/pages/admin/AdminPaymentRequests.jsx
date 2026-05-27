@@ -240,7 +240,7 @@ export default function AdminPaymentRequests() {
                     onMouseOver={e => e.currentTarget.style.background = '#1F5C56'}
                     onMouseOut={e => e.currentTarget.style.background = '#2E7D72'}
                   >
-                    <CheckCircle size={15} /> APPROVE
+                    <CheckCircle size={15} /> VERIFY
                   </button>
                   <button
                     onClick={() => { setRejectTarget(d); setRejectReason(''); setCustomReason(''); setRejectError(''); }}
@@ -253,7 +253,7 @@ export default function AdminPaymentRequests() {
                     onMouseOver={e => { e.currentTarget.style.background = '#FDEEEE'; }}
                     onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <XCircle size={15} /> REJECT
+                    <XCircle size={15} /> NOT VERIFY
                   </button>
                 </div>
               </div>
@@ -266,10 +266,10 @@ export default function AdminPaymentRequests() {
       {approveTarget && (
         <Overlay>
           <h3 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#4A4A4A', marginBottom: 8 }}>
-            Approve Payment?
+            Verify Payment?
           </h3>
           <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#4A4A4A', lineHeight: 1.6, marginBottom: 20 }}>
-            Approve this payment of{' '}
+            Verify this payment of{' '}
             <strong>{formatPeso(approveTarget.amount)}</strong> from{' '}
             <strong>{approveTarget.tenant_name}</strong>?
           </p>
@@ -282,7 +282,7 @@ export default function AdminPaymentRequests() {
                 cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.7 : 1,
               }}
             >
-              {processing ? 'Approving...' : 'CONFIRM'}
+              {processing ? 'Verifying...' : 'CONFIRM'}
             </button>
             <button
               onClick={() => setApproveTarget(null)} disabled={processing}
@@ -301,7 +301,7 @@ export default function AdminPaymentRequests() {
       {rejectTarget && (
         <Overlay>
           <h3 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#4A4A4A', marginBottom: 8 }}>
-            Reject Payment
+            Not Verify Payment
           </h3>
           <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#888888', marginBottom: 14 }}>
             Provide a reason so <strong>{rejectTarget.tenant_name}</strong> is informed.
@@ -363,7 +363,7 @@ export default function AdminPaymentRequests() {
                 cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.7 : 1,
               }}
             >
-              {processing ? 'Rejecting...' : 'CONFIRM REJECTION'}
+              {processing ? 'Processing...' : 'CONFIRM'}
             </button>
             <button
               onClick={() => { setRejectTarget(null); setRejectReason(''); setCustomReason(''); setRejectError(''); }} disabled={processing}

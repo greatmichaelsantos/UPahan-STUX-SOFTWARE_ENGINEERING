@@ -63,10 +63,10 @@ export default function AdminPaymentRequests({ navigation }) {
   }, [fetchPayments]));
 
   const handleApprove = payment => {
-    Alert.alert('Approve Payment', `Approve ${formatPeso(payment.amount)} from ${payment.tenant_name}?`, [
+    Alert.alert('Verify Payment', `Verify ${formatPeso(payment.amount)} from ${payment.tenant_name}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Approve',
+        text: 'Verify',
         onPress: async () => {
           setProcessing(payment.payment_id);
           try {
@@ -242,7 +242,7 @@ export default function AdminPaymentRequests({ navigation }) {
                       ? <ActivityIndicator size="small" color="#fff" />
                       : <>
                           <Ionicons name="checkmark" size={16} color="#fff" />
-                          <Text style={[s.btnLabel, { color: '#fff' }]}>APPROVE</Text>
+                          <Text style={[s.btnLabel, { color: '#fff' }]}>VERIFY</Text>
                         </>}
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -254,7 +254,7 @@ export default function AdminPaymentRequests({ navigation }) {
                       ? <ActivityIndicator size="small" color={COLORS.dangerPrimary} />
                       : <>
                           <Ionicons name="close" size={16} color={COLORS.dangerPrimary} />
-                          <Text style={[s.btnLabel, { color: COLORS.dangerPrimary }]}>REJECT</Text>
+                          <Text style={[s.btnLabel, { color: COLORS.dangerPrimary }]}>NOT VERIFY</Text>
                         </>}
                   </TouchableOpacity>
                 </View>
