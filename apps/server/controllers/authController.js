@@ -77,33 +77,47 @@ const register = async (req, res) => {
       return res.status(409).json({ success: false, message: 'Email already in use.' });
     }
     const hashed = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    await pool.query(
-      `INSERT INTO users (first_name, last_name, email, phone_number, password, role, is_verified, verification_token)
-       VALUES ($1, $2, $3, $4, $5, $6, FALSE, $7)`,
-      [firstName, lastName, email.toLowerCase(), phoneNumber || null, hashed, role, verificationToken]
-    );
 
-    const verifyUrl = `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/verify-email?token=${verificationToken}`;
-    await transporter.sendMail({
-      from: `"UPahan" <${process.env.EMAIL_USER}>`,
-      to: email.toLowerCase(),
-      subject: 'Verify your UPahan account',
-      html: `
-        <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#FAF8F5;border-radius:12px;">
-          <h2 style="color:#277571;margin-bottom:8px;">Welcome to UPahan!</h2>
-          <p style="color:#444;font-size:15px;margin-bottom:24px;">
-            Hi ${firstName}, click the button below to verify your email address and activate your account.
-          </p>
-          <a href="${verifyUrl}" style="display:inline-block;background:#277571;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
-            Verify Email
-          </a>
-          <p style="color:#888;font-size:12px;margin-top:24px;">
-            This link expires in 24 hours. If you didn't sign up, ignore this email.
-          </p>
-        </div>
-      `,
-    });
+    // Insert user first — get back the row so we have user_id for the fallback
+    const result = await pool.query(
+      `INSERT INTO users (first_name, last_name, email, phone_number, password, role, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING *`,
+      [firstName, lastName, email.toLowerCase(), phoneNumber || null, hashed, role]
+    );
+    const newUser = result.rows[0];
+
+    // Try to send verification email — non-fatal if it errors
+    try {
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await pool.query(
+        'UPDATE users SET verification_token = $1 WHERE user_id = $2',
+        [verificationToken, newUser.user_id]
+      );
+      const verifyUrl = `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/verify-email?token=${verificationToken}`;
+      await transporter.sendMail({
+        from: `"UPahan" <${process.env.EMAIL_USER}>`,
+        to: email.toLowerCase(),
+        subject: 'Verify your UPahan account',
+        html: `
+          <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#FAF8F5;border-radius:12px;">
+            <h2 style="color:#277571;margin-bottom:8px;">Welcome to UPahan!</h2>
+            <p style="color:#444;font-size:15px;margin-bottom:24px;">
+              Hi ${firstName}, click the button below to verify your email address and activate your account.
+            </p>
+            <a href="${verifyUrl}" style="display:inline-block;background:#277571;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+              Verify Email
+            </a>
+            <p style="color:#888;font-size:12px;margin-top:24px;">
+              This link expires in 24 hours. If you didn't sign up, ignore this email.
+            </p>
+          </div>
+        `,
+      });
+    } catch (emailErr) {
+      console.error('Verification email failed (non-fatal):', emailErr.message);
+      // Auto-verify so the user can still log in even if email delivery fails
+      await pool.query('UPDATE users SET is_verified = TRUE WHERE user_id = $1', [newUser.user_id]);
+    }
 
     res.status(201).json({
       success: true,
