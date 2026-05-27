@@ -42,9 +42,7 @@ export default function AdminPaymentRequests() {
     if (!silent) setLoading(true);
     try {
       const r = await api.get('/payments');
-      console.log('PAYMENTS RESPONSE:', r.data);
       const all = r.data.data || [];
-      console.log('ALL PAYMENTS:', all.map(p => ({ id: p.payment_id, status: p.payment_status || p.status })));
       const pending = all.filter(p =>
         (p.payment_status || p.status) === 'pending' ||
         (p.payment_status || p.status) === 'pending_approval'
