@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { CheckCircle, User, MapPin, Clock, Calendar, UserCog, MessageSquare } from 'lucide-react';
 import AdminLayout from '../../components/AdminLayout';
 import StatusBadge from '../../components/StatusBadge';
+import ImageLightbox from '../../components/ImageLightbox';
 import api from '../../utils/api';
 import { formatDateTime, timeAgo, categoryLabel } from '../../utils/format';
 
@@ -22,9 +23,10 @@ export default function AdminMaintenanceDetail() {
   const { id } = useParams();
   const navigate  = useNavigate();
   const location  = useLocation();
-  const [req, setReq]         = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [req, setReq]             = useState(null);
+  const [loading, setLoading]     = useState(true);
   const [resolving, setResolving] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const load = async () => {
     try {
@@ -127,7 +129,11 @@ export default function AdminMaintenanceDetail() {
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {req.photos.map((photo, i) => (
-                <img key={i} src={photo} alt="Evidence" style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: 8, background: '#F0EEEB' }} />
+                <img
+                  key={i} src={photo} alt="Evidence"
+                  onClick={() => setLightboxSrc(photo)}
+                  style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: 8, background: '#F0EEEB', cursor: 'zoom-in' }}
+                />
               ))}
             </div>
           </div>
@@ -171,6 +177,8 @@ export default function AdminMaintenanceDetail() {
           </div>
         )}
       </div>
+
+      <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </AdminLayout>
   );
 }

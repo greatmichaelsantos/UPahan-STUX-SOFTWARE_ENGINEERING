@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Receipt, ExternalLink } from 'lucide-react';
 import AdminLayout from '../../components/AdminLayout';
 import SectionHeader from '../../components/SectionHeader';
 import EmptyState from '../../components/EmptyState';
+import ImageLightbox from '../../components/ImageLightbox';
 import api from '../../utils/api';
 import { formatPeso, formatDate } from '../../utils/format';
 
@@ -35,6 +36,7 @@ export default function AdminPaymentRequests() {
   const [rejectError, setRejectError]     = useState('');
   const [processing, setProcessing]       = useState(false);
   const [toast, setToast]                 = useState('');
+  const [lightboxSrc, setLightboxSrc]     = useState(null);
 
   const load = useCallback((silent = false) => {
     if (!silent) setLoading(true);
@@ -196,11 +198,10 @@ export default function AdminPaymentRequests() {
                               <ExternalLink size={14} /> PDF {proofs.length > 1 ? idx + 1 : 'Receipt'}
                             </a>
                           ) : (
-                            <a key={idx} href={fullSrc} target="_blank" rel="noreferrer" style={{ flexShrink: 0 }}>
-                              <img src={fullSrc} alt={`Proof ${idx + 1}`}
-                                style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: '1px solid #E0DDD8' }}
-                              />
-                            </a>
+                            <img key={idx} src={fullSrc} alt={`Proof ${idx + 1}`}
+                              onClick={() => setLightboxSrc(fullSrc)}
+                              style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in', border: '1px solid #E0DDD8', flexShrink: 0 }}
+                            />
                           );
                         })}
                       </div>
@@ -378,6 +379,8 @@ export default function AdminPaymentRequests() {
           {toast}
         </div>
       )}
+
+      <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </AdminLayout>
   );
 }
