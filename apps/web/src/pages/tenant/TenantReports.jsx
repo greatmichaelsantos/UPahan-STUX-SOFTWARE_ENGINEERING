@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart2 } from 'lucide-react';
 import TenantLayout from '../../components/TenantLayout';
 import SectionHeader from '../../components/SectionHeader';
@@ -120,13 +120,13 @@ export default function TenantReports() {
     URL.revokeObjectURL(url);
   };
 
-  const handleGenerate = async () => {
+  const fetchReport = async (p) => {
     setError('');
     setLoading(true);
     try {
-      const params = period === 'custom'
+      const params = p === 'custom'
         ? `period=custom&start_date=${startDate}&end_date=${endDate}`
-        : `period=${period}`;
+        : `period=${p}`;
       const res = await api.get(`/reports/tenant?${params}`);
       setReport(res.data.data);
     } catch (err) {
@@ -135,6 +135,15 @@ export default function TenantReports() {
       setLoading(false);
     }
   };
+
+  const handleGenerate = () => fetchReport(period);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchReport('monthly');
+    const interval = setInterval(() => fetchReport(period), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
