@@ -107,7 +107,7 @@ export default function AdminPaymentRequests() {
       setCustomReason('');
       setRejectError('');
       await load();
-      showToast('Payment declaration rejected.');
+      showToast('Payment declaration not verified.');
     } catch (err) {
       setRejectError(err.response?.data?.message || 'Something went wrong.');
     } finally {
@@ -177,7 +177,6 @@ export default function AdminPaymentRequests() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   {[
                     ['Method', d.payment_method],
-                    ['Payment Date', formatDate(d.payment_date, 'medium')],
                     ['Reference', d.reference_number || '—'],
                     ['Submitted', formatDate(d.created_at, 'medium')],
                   ].map(([label, value]) => (
